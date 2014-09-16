@@ -11,7 +11,10 @@ import (
 	"errors"
 	"net/url"
 	"strings"
+	"time"
 )
+
+var defaultTimeout = time.Second * 20
 
 // root returns the root URL, with no path on it
 func root(u *url.URL) string {
@@ -47,12 +50,22 @@ type MetaInspector struct {
 	images        []string
 	keywords      []string
 	compatibility map[string]string
+	body          []byte
+}
+
+type Config struct {
+	Timeout time.Duration
 }
 
 // New creates an object with all the URL scraped info
-func New(uri string) (*MetaInspector, error) {
+func New(uri string, cfg *Config) (*MetaInspector, error) {
 	if uri == "" {
 		return nil, errors.New("Url is empty!")
+	}
+
+	var timeout = defaultTimeout
+	if cfg != nil && cfg.Timeout > time.Millisecond {
+		timeout = cfg.Timeout
 	}
 
 	u, err := url.Parse(uri)
@@ -60,7 +73,7 @@ func New(uri string) (*MetaInspector, error) {
 		return nil, err
 	}
 
-	scraper, err := newScraper(fixURL(u), 20)
+	scraper, err := newScraper(fixURL(u), timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +92,8 @@ func New(uri string) (*MetaInspector, error) {
 		scraper.links,
 		scraper.images,
 		scraper.keywords,
-		scraper.compatibility}, nil
+		scraper.compatibility,
+		scraper.body}, nil
 }
 
 // Url provided by the Metainspector
@@ -155,4 +169,9 @@ func (m MetaInspector) Keywords() []string {
 // Compatibility con browsers. specially with IE
 func (m MetaInspector) Compatibility() map[string]string {
 	return m.compatibility
+}
+
+// Body of the server's response.
+func (m MetaInspector) Body() []byte {
+	return m.body
 }

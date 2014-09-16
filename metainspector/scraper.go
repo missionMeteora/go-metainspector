@@ -1,6 +1,8 @@
 package metainspector
 
 import (
+	"bytes"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
@@ -23,6 +25,9 @@ type scraper struct {
 	images        []string
 	keywords      []string
 	compatibility map[string]string
+
+	// full contents of the page
+	body []byte
 }
 
 // findCharset returns the charset given the Content-Type
@@ -80,20 +85,20 @@ func addElement(elems []string, u *url.URL, n *html.Node, attr string) []string 
 }
 
 // timeoutDialer sets a connection with a given timeout
-func timeoutDialer(secs int) func(net, addr string) (c net.Conn, err error) {
+func timeoutDialer(timeout time.Duration) func(net, addr string) (c net.Conn, err error) {
 	return func(netw, addr string) (net.Conn, error) {
 		c, err := net.Dial(netw, addr)
 		if err != nil {
 			return nil, err
 		}
-		c.SetDeadline(time.Now().Add(time.Duration(secs) * time.Second))
+		c.SetDeadline(time.Now().Add(timeout))
 		return c, nil
 	}
 }
 
 // newScraper parses the given url and scrapes the site, returning
 // a scraper object with all the site info and meta tags
-func newScraper(u *url.URL, timeout int) (*scraper, error) {
+func newScraper(u *url.URL, timeout time.Duration) (*scraper, error) {
 	var title string
 	var language string
 	var author string
@@ -157,7 +162,12 @@ func newScraper(u *url.URL, timeout int) (*scraper, error) {
 	}
 	defer resp.Body.Close()
 
-	tree, err := h5.New(resp.Body)
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	tree, err := h5.New(bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +183,8 @@ func newScraper(u *url.URL, timeout int) (*scraper, error) {
 		links,
 		images,
 		keywords,
-		compatibility}, nil
+		compatibility,
+		body}, nil
 }
 
 // hasProtocolAsPrefix returns true if the value belongs

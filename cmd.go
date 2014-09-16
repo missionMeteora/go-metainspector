@@ -69,7 +69,7 @@ func main() {
 	var url = flag.String("u", defaultURL(), "URL to metainspect.")
 	var all = flag.Bool("all", false, "Show full results.")
 	flag.Parse()
-	mi, err := metainspector.New(*url)
+	mi, err := metainspector.New(*url, nil)
 	if err != nil {
 		exit("Something went wrong. Please, try again.")
 	}
