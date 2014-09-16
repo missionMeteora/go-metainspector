@@ -45,7 +45,9 @@ func mapifyStr(content string) map[string]string {
 	a := strings.Split(content, ",")
 	for i := range a {
 		s := strings.Split(a[i], "=")
-		m[s[0]] = s[1]
+		if len(s) > 1 {
+			m[s[0]] = s[1]
+		}
 	}
 	return m
 }
