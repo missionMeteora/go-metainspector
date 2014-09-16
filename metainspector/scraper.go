@@ -116,7 +116,9 @@ func newScraper(u *url.URL, timeout time.Duration) (*scraper, error) {
 		case "html":
 			language = findAttribute(n, "lang")
 		case "title":
-			title = n.FirstChild.Data
+			if n.FirstChild != nil {
+				title = n.FirstChild.Data
+			}
 		case "a":
 			links = addElement(links, u, n, "href")
 		case "img":
